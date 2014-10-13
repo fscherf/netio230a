@@ -101,19 +101,33 @@ MAX_SECONDS_WAIT_FOR_RECEIVE_HELLO = MAX_SECONDS_WAIT_FOR_RECEIVE * 3
 TIMES_WAIT_FOR_RECEIVE = 100
 
 class netio230a(object):
-    """netio230a is the basic class that you want to instantiate when communicating
+    """
+    netio230a is the basic class that you want to instantiate when communicating
     with the Koukaam NETIO 230A. It can handle the raw TCP socket connection and
-    helps you send the commands to switch on / off powerSockets etc."""
+    helps you send the commands to switch on / off powerSockets etc.
+    """
 
-    def __init__(self, host, username, password, secureLogin=False, customTCPPort=23):
-        """netio230a constructor: set up an instance of netio230a by giving:
-
-            host        the hostname of the NETIO-230A (may be in the form of something.dyndns.org or 192.168.1.2)
-            username    the username you want to use to authenticate against the NETIO-230A
-            password    the password (that belongs to username)
-            secureLogin bool value specifying whether to use a hashed or a cleartext login. True is hightly recommended for insecure networks!
-            customTCPPort  integer specifying which port to connect to, defaul: 23 (NETIO-230A must be reachable via KSHELL/telnet via hostname:customTCPPort)
+    def __init__(self, host, username, password, secureLogin=False,
+                 customTCPPort=23):
         """
+        netio230a constructor: set up an instance of netio230a by giving:
+
+         - host             the hostname of the NETIO-230A (may be in the form
+                            of something.dyndns.org or 192.168.1.2)
+
+         - username         the username you want to use to authenticate against
+                            the NETIO-230A
+
+         - password         the password (that belongs to username)
+         - secureLogin      bool value specifying whether to use a hashed or
+                            a cleartext login. True is hightly recommended for
+                            insecure networks!
+
+         - customTCPPort    integer specifying which port to connect to,
+                            default: 23 (NETIO-230A must be reachable via
+                            KSHELL/telnet via hostname:customTCPPort)
+        """
+
         self.logging = False
         self.__lock = threading.Lock()
         self.mean_request_time = INITIAL_WAIT_FOR_OTHER_REQUEST
@@ -131,22 +145,32 @@ class netio230a(object):
     def __create_socket_and_login(self, lock_already_acquired = False):
         # create a TCP/IP socket
         self.__s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try: # btsocket on PyS60 lacks this member function so we have to try it:
+
+        # btsocket on PyS60 lacks this member function so we have to try it:
+        try:
             self.__s.settimeout(TELNET_SOCKET_TIMEOUT)
         except:
             pass
         self.__login(lock_already_acquired)
-        # Create the thread that watches for timeouts of the NETIO230A TCP connection:
-        self.__watchSocketThread = threading.Timer(WATCH_SOCKET_WAIT, self.__watchSocket)
-        # When the rest of the program terminates, the thread should stop as well:
+
+        # Create the thread that watches for timeouts of the NETIO230A
+        # TCP connection:
+        self.__watchSocketThread = threading.Timer(WATCH_SOCKET_WAIT,
+                                                   self.__watchSocket)
+
+        # When the rest of the program terminates,
+        # the thread should stop as well:
         self.__watchSocketThread.daemon = True
         self.__watchSocketThread.start()
 
 
     def __login(self, lock_already_acquired = False):
-        """Login to the server using the credentials given to the constructor.
-           Note that this is a private method called by the constructor
-           (so all connection details are set already)."""
+        """
+        Login to the server using the credentials given to the constructor.
+        Note that this is a private method called by the constructor
+        (so all connection details are set already).
+        """
+
         # connect to the server
         try:
             self.__s.connect((self.__host, self.__tcp_port))
@@ -156,7 +180,9 @@ class netio230a(object):
             if type(error) == socket.timeout:
                 raise NameError("Timeout while connecting to " + self.__host)
                 #print("There was a timeout")
-            elif type(error) == socket.gaierror or type(error) == socket.error and error.errno == errno.ENETUNREACH:
+            elif type(error) == socket.gaierror or\
+                 type(error) == socket.error and\
+                 error.errno == errno.ENETUNREACH:
                 raise NameError("Unable to understand the host you gave: %s. Please provide a correct IP address or domain name." % self.__host)
             elif type(error) == socket.error:
                 if error.errno == errno.ECONNREFUSED:
